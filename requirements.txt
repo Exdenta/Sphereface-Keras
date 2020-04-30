@@ -1,0 +1,7 @@
+tqdm
+numpy
+scipy
+scikit-image
+opencv-python
+protobuf
+mtcnn
