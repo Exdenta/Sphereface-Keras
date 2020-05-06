@@ -1,7 +1,10 @@
+wheel
 tqdm
 numpy
 scipy
 scikit-image
 opencv-python
-protobuf
 mtcnn
+tensorflow
+keras
+protobuf
