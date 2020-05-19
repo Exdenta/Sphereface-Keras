@@ -25,9 +25,8 @@ process_count = 6
 flip_image = False # will add embeddings of the flipped image also
 model_path = project_path / 'models' / 'sphereface_20_caffe' / 'sphereface_deploy.prototxt'
 weights_path = project_path / 'models' / 'sphereface_20_caffe' / 'sphereface_model.caffemodel'
-dataset_path = project_path / 'test' / 'data'
-list_path = dataset_path / 'pairs.txt'
-folder_path = dataset_path / 'lfw_112X96'
+dataset_path = project_path / 'test' / 'data' / 'lfw_112x96'
+list_path = project_path / 'test' / 'data' / 'pairs.txt'
 
 caffe.set_mode_cpu()
 
@@ -81,7 +80,7 @@ def create_pairs():
     """
 
     # check paths do exist
-    paths = [list_path, folder_path]
+    paths = [list_path, dataset_path]
     for path in paths:
         if not path.exists():
             exit("Path {} doesn't exist!".format(path))
@@ -98,15 +97,15 @@ def create_pairs():
         l = line.split()
         if len(l) == 3:
             # recreating relative path + file name
-            pair['fileL'] = folder_path / l[0] / (l[0] +
+            pair['fileL'] = dataset_path / l[0] / (l[0] +
                                                   "_" + l[1].rjust(4, '0') + ".jpg")
-            pair['fileR'] = folder_path / l[0] / (l[0] +
+            pair['fileR'] = dataset_path / l[0] / (l[0] +
                                                   "_" + l[2].rjust(4, '0') + ".jpg")
             pair['flag'] = 1
         elif len(l) == 4:
-            pair['fileL'] = folder_path / l[0] / (l[0] +
+            pair['fileL'] = dataset_path / l[0] / (l[0] +
                                                   "_" + l[1].rjust(4, '0') + ".jpg")
-            pair['fileR'] = folder_path / l[2] / (l[2] +
+            pair['fileR'] = dataset_path / l[2] / (l[2] +
                                                   "_" + l[3].rjust(4, '0') + ".jpg")
             pair['flag'] = -1
         pair['fold'] = math.ceil(i / 600)
@@ -142,8 +141,8 @@ if __name__ == "__main__":
     pairs_path = current_dir / 'data' / 'pairs.npy'
     np.save(str(pairs_path), pairs)
     
-    # load saved file
-    pairs = np.load(str(pairs_path), allow_pickle=True)
+    # # load saved file
+    # pairs = np.load(str(pairs_path), allow_pickle=True)
 
     print("\nAccuracy:")
     ACCs = np.zeros(10)

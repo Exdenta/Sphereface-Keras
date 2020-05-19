@@ -10,6 +10,7 @@ from mtcnn import MTCNN
 import multiprocessing
 from tqdm import tqdm
 import numpy as np
+import argparse
 import pathlib
 import sys
 import cv2
@@ -84,20 +85,26 @@ def process(subdirectory, save_dir, dataset_path):
         cv2.imwrite(str(save_dir / subdirectory / image_name), image)
 
 
-if __name__ == "__main__":
-    current_dir = pathlib.Path.cwd()
-    print(current_dir)
-    project_path = current_dir.parent
-    save_dir = current_dir / 'test' / 'data' / 'lfw_112x96'
-    dataset_path = current_dir / 'preprocess' / 'data' / 'lfw'
+def parse_arguments():
+    parser = argparse.ArgumentParser('Detect, align and save faces')
+    parser.add_argument('--source_dir', help='directory with original images')
+    parser.add_argument('--save_dir', help='directory to save images with aligned faces')
+    return parser.parse_args()
 
-    if not dataset_path.exists():
-        exit("Path {} doesn't exist!".format(dataset_path))
+if __name__ == "__main__":
+    args = parse_arguments()
+    source_dir = pathlib.Path(args.source_dir)
+    save_dir = pathlib.Path(args.save_dir)
+    print("Processing {} dataset".format(source_dir))
+    print("Aligned faces will be saves to {}".format(save_dir))
+
+    if not source_dir.exists():
+        exit("Path {} doesn't exist!".format(source_dir))
     if not save_dir.exists():
         save_dir.mkdir(parents=True)
 
     # each subdirectory in lwf dataset in a specific person photo collection
-    subdirectories = os.listdir(dataset_path)
+    subdirectories = os.listdir(source_dir)
 
     print("Detect and align faces:\n")
     pool = multiprocessing.Pool(processes=process_count)
@@ -106,6 +113,6 @@ if __name__ == "__main__":
     def update(*a):
         pbar.update()
     async_requests = [pool.apply_async(process, args=(
-        subdirectory, save_dir, dataset_path), callback=update) for subdirectory in subdirectories]
+        subdirectory, save_dir, source_dir), callback=update) for subdirectory in subdirectories]
     pool.close()
     pool.join()
