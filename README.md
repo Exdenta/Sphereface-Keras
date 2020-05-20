@@ -11,25 +11,25 @@ Pretrained models:
 - Python 3
 
 ## Train:
-Download the training set **CASIA-WebFace**, unzip it and put it to train/data/.<br>
+Download the training set **CASIA-WebFace**, unzip it and put it to datasets/.<br>
 [Google Drive](https://drive.google.com/open?id=1Of_EVz-yHV7QVWQGihYfvtny9Ne8qXVz) link from [here](https://github.com/happynear/AMSoftmax/issues/18)
 
 Preprocess:
 ```Shell
-python preprocess/detect_and_align.py --source_dir train/data/CASIA-WebFace --save_dir train/data/CASIA-WebFace-112x96
+python datasets/detect_and_align.py --source_dir datasets/CASIA-WebFace --save_dir datasets/CASIA-WebFace-112x96
 ```
 
 ## Test:
-Download the training set **LFW** and put it to test/data/
+Download the training set **LFW** and put it to datasets/
 ```Shell
-./preprocess/get_lfw.sh
-tar xvf data/lfw.tgz -C data/
-./test/get_pairs.sh
+./datasets/get_lfw.sh
+tar xvf datasets/lfw.tgz -C datasets/
+./datasets/get_pairs.sh
 ```
 
 Preprocess:
 ```Shell
-python preprocess/detect_and_align.py --source_dir test/data/lfw --save_dir test/data/lfw_112x96
+python preprocess/detect_and_align.py --source_dir datasets/lfw --save_dir datasets/lfw_112x96
 ```
 
 Run test:

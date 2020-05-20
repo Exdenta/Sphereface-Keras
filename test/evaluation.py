@@ -25,8 +25,8 @@ process_count = 6
 flip_image = False # will add embeddings of the flipped image also
 model_path = project_path / 'models' / 'sphereface_20_caffe' / 'sphereface_deploy.prototxt'
 weights_path = project_path / 'models' / 'sphereface_20_caffe' / 'sphereface_model.caffemodel'
-dataset_path = project_path / 'test' / 'data' / 'lfw_112x96'
-list_path = project_path / 'test' / 'data' / 'pairs.txt'
+dataset_path = project_path / 'datasets' / 'lfw_112x96'
+list_path = project_path / 'datasets' / 'lfw_pairs.txt'
 
 caffe.set_mode_cpu()
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     pairs = create_pairs()
 
     # save for future testing
-    pairs_path = current_dir / 'data' / 'pairs.npy'
+    pairs_path = project_path / 'datasets' / 'lfw_pairs.npy'
     np.save(str(pairs_path), pairs)
     
     # # load saved file
