@@ -15,7 +15,7 @@ import pathlib
 import sys
 import cv2
 
-process_count = 1
+process_count = 6
 image_size = (96, 112)
 
 # shifts the rectangle coords so eyes are in the center of it (not being used for now)

@@ -1,6 +1,7 @@
 wheel
 tqdm
 numpy
+pathlib
 scipy
 scikit-image
 opencv-python
