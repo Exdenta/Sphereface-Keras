@@ -15,7 +15,7 @@ import pathlib
 import sys
 import cv2
 
-process_count = 6
+process_count = 16
 image_size = (96, 112)
 
 # shifts the rectangle coords so eyes are in the center of it (not being used for now)
@@ -113,6 +113,6 @@ if __name__ == "__main__":
     def update(*a):
         pbar.update()
     async_requests = [pool.apply_async(process, args=(
-        subdirectory, save_dir, source_dir), callback=update) for subdirectory in subdirectories[1170:]]
+        subdirectory, save_dir, source_dir), callback=update) for subdirectory in subdirectories]
     pool.close()
     pool.join()
