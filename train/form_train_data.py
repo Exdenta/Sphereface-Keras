@@ -37,10 +37,10 @@ def process(person_index, data_list):
     return pairs
 
 
-def form_train_data(train_data_path):
+def form_train_data(dataset_path):
     # train dataset paths
-    casia_dataset_folder = train_data_path / 'CASIA-WebFace-112x96'
-    casia_list_path = train_data_path / 'CASIA-WebFace-112x96.txt'
+    casia_dataset_folder = dataset_path / 'CASIA-WebFace-112x96'
+    casia_list_path = dataset_path / 'CASIA-WebFace-112x96.txt'
 
     print("Form CASIA-Webface image list")
     casia_dataset_subfolders = os.listdir(casia_dataset_folder)
@@ -82,9 +82,9 @@ def form_train_data(train_data_path):
     return pairs
 
 
-def form_test_data(test_data_path):
-    lfw_dataset_folder = test_data_path / 'lfw_112x96'
-    lfw_list_path = test_data_path / 'pairs.txt'
+def form_test_data(dataset_path):
+    lfw_dataset_folder = dataset_path / 'lfw_112x96'
+    lfw_list_path = dataset_path / 'pairs.txt'
 
     lfw_list = []
     with lfw_list_path.open(mode='r') as f:
@@ -114,9 +114,9 @@ def form_test_data(test_data_path):
     return pairs
 
 
-def load_data(train_data_path):
+def load_data(dataset_path):
     # training data
-    casia_pairs_path = train_data_path / 'casia_pairs.npz'
+    casia_pairs_path = dataset_path / 'casia_pairs.npz'
     err = False
 
     if casia_pairs_path.exists():
@@ -129,7 +129,7 @@ def load_data(train_data_path):
         casia_pairs = []
 
     # test data
-    lfw_pairs_path = train_data_path / 'lfw_pairs.npz'
+    lfw_pairs_path = dataset_path / 'lfw_pairs.npz'
     if lfw_pairs_path.exists():
         print("Loading test data")
         lfw_pairs = dict(np.load(str(lfw_pairs_path), allow_pickle=True))
@@ -146,23 +146,23 @@ def load_data(train_data_path):
     return casia_pairs, lfw_pairs
 
 
-def generate_data(train_data_path):
-    # test dataset path
-    test_data_path = train_data_path.parent.parent / 'test' / 'data'
+def generate_data(project_dir):
+
+    dataset_path = project_dir / 'datasets'
 
     # training data
-    casia_pairs_path = train_data_path / 'casia_pairs.npz'
+    casia_pairs_path = dataset_path / 'casia_pairs.npz'
     print("\nForming train data")
-    casia_pairs = form_train_data(train_data_path)
+    casia_pairs = form_train_data(dataset_path)
     np.savez_compressed(str(casia_pairs_path), casia_pairs)  # ~ 300 Mb
 
     # test data
-    lfw_pairs_path = train_data_path / 'lfw_pairs.npz'
+    lfw_pairs_path = dataset_path / 'lfw_pairs.npz'
     print("\nForming test data")
-    lfw_pairs = form_test_data(test_data_path)
+    lfw_pairs = form_test_data(dataset_path)
     np.savez_compressed(str(lfw_pairs_path), lfw_pairs)
 
 
 if __name__ == "__main__":
-    data_path = Path.cwd() / 'train' / 'data'
-    generate_data(data_path)
+    project_dir = Path(__file__).parent.parent
+    generate_data(project_dir)
