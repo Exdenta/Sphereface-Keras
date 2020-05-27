@@ -17,6 +17,9 @@ Download the training set **CASIA-WebFace**, unzip it and put it to datasets/.<b
 ./datasets/get_casia.sh
 # Preprocess:
 python3 preprocess/detect_and_align.py --source_dir datasets/CASIA-WebFace --save_dir datasets/CASIA-WebFace-112x96
+python3 train/form_train_data.py
+jupyter notebook
+# go to train/train.ipynb
 ```
 
 ## Test:
