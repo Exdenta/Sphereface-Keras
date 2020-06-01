@@ -114,35 +114,70 @@ def form_test_data(dataset_path):
     return pairs
 
 
+def form_short_train_data(dataset_path, size):
+    if size < 0:
+        exit("size < 0!")
+
+    # train dataset paths
+    casia_dataset_folder = dataset_path / 'CASIA-WebFace-112x96'
+    casia_list_path = dataset_path / 'CASIA-WebFace-112x96-short.txt'
+
+    print("Form CASIA-Webface image list")
+    casia_dataset_subfolders = os.listdir(casia_dataset_folder)
+
+    # exclude the identities appearing in LFW dataset
+    [casia_dataset_subfolders.remove(x)
+        for x in ['0166921', '1056413', '1193098']]
+
+    # create the list for training
+    n = 0
+    with casia_list_path.open(mode='w') as f:
+        for i, subfolder in enumerate(casia_dataset_subfolders):
+            for image_name in os.listdir(casia_dataset_folder / subfolder):
+                image_path = os.path.join(subfolder, image_name)
+                f.write("{} {}\n".format(image_path, i))
+                n += 1
+                if n >= size:
+                    break
+            if n >= size:
+                break
+
+    print("Load CASIA-Webface image list")
+    casia_list = []
+    with casia_list_path.open(mode='r') as f:
+        casia_list = list(map(lambda x: x.split(), f.readlines()))
+
+    # count a number of unique persons
+    person_count = len(set(map(lambda x: x[1], casia_list)))
+    pairs = []
+
+    print("Form short train dataset")
+    pairs = []
+    for i, person in enumerate(tqdm(casia_list)):
+        pairs.extend(process(i, casia_list))
+
+    # pairs[0]: {'fileL': '0000045\\001.jpg', 'fileR': '0000045\\002.jpg', 'flag': 1}
+    return pairs
+
+
 def load_short_train_data(dataset_path, size):
-    train_pairs_path = dataset_path / 'casia_pairs.npz'
-    if train_pairs_path.exists():
-        print("Loading train data")
-        train_pairs = dict(np.load(str(train_pairs_path), allow_pickle=True))
-        train_pairs = train_pairs['arr_0']
+    train_pairs_path = dataset_path / "casia_pairs_{}.npz".format(size)
+    print("\nForming train data")
+    if not train_pairs_path.exists():
+        print("Generate new pairs\n")
+        train_pairs = form_short_train_data(dataset_path, size)
+        np.savez_compressed(str(train_pairs_path), train_pairs)
     else:
-        print("{} does not exist!".format(str(train_pairs_path)))
-        print("You need to generate train data first. Run generate_data(...) script.")
-        train_pairs = []
+        print("Load existing pairs\n")
+        train_pairs = dict(np.load(str(train_pairs_path),
+                                   allow_pickle=True))['arr_0'].tolist()
 
-    i = 0
-    j = 0
-    train_list = []
-    for i, pair in enumerate(train_pairs):
-        if i < size // 2 and pair['flag'] == 0:
-            train_list.append(pair)
-        if j < size // 2 and pair['flag'] == 1:
-            train_list.append(pair)
-        if i + j < size:
-            break
+    # convert to pandas dataframe
+    dataframe = pd.DataFrame(train_pairs)
+    dataframe['flag'] = dataframe['flag'].astype(str)
+    return dataframe
 
-    np.savez_compressed(
-        "/home/paperspace/Projects/sphereface_keras/datasets/casia_5000_pairs.npz", np.array(train_list))
-
-    random.shuffle(train_list)
-    train_dataframe = pd.DataFrame(train_list)  # takes long time
-    train_dataframe['flag'] = train_dataframe['flag'].astype(str)
-    return train_dataframe
+    return train_pairs
 
 
 def load_train_data(dataset_path):

@@ -2,8 +2,14 @@
 from tensorflow.keras.layers import Conv2D, Add, Activation, PReLU, Dense, Input, ZeroPadding2D, Lambda, GlobalAveragePooling2D, Dot
 from tensorflow.keras.initializers import TruncatedNormal
 from tensorflow.keras.models import Model
-from margin_inner_product_layer import MarginInnerProductLayer
+from tensorflow.keras import backend as K
+from pathlib import Path
 
+# https://keras.io/examples/mnist_siamese/
+# https://stackoverflow.com/questions/51003027/computing-cosine-similarity-between-two-tensors-in-keras
+
+
+# -------------- Model --------------
 
 def conv_3_block(input, filters):
     x = ZeroPadding2D(padding=(1, 1))(input)
@@ -54,13 +60,46 @@ def sphereface20(input_shape):
 
     x = GlobalAveragePooling2D()(x)
     x = Dense(512, kernel_initializer='glorot_uniform')(x)
-    fc6 = MarginInnerProductLayer(512, num_classes)
 
-    model = Model(input, fc6)
+    model = Model(input, x)
     return model
 
-# https://keras.io/examples/mnist_siamese/
 
+# -------------- Cosine distance model --------------
+
+def cos_dist_output_shape(shapes):
+    shape1, shape2 = shapes
+    return (shape1[0], 1)
+
+
+def cosine_distance(vests):
+    x, y = vests
+    x = K.l2_normalize(x, axis=-1)
+    y = K.l2_normalize(y, axis=-1)
+    return -K.mean(x * y, axis=-1, keepdims=True)
+
+
+def get_train_model_cosine():
+    # network definition
+    input_shape = (112, 96, 3)
+    base_network = sphereface20(input_shape)
+
+    input_a = Input(shape=input_shape)
+    input_b = Input(shape=input_shape)
+
+    # because we re-use the same instance `base_network`,
+    # the weights of the network
+    # will be shared across the two branches
+    processed_a = base_network(input_a)
+    processed_b = base_network(input_b)
+    distance = Lambda(cosine_distance, output_shape=cos_dist_output_shape)(
+        [processed_a, processed_b])
+
+    model = Model([input_a, input_b], distance)
+    return model
+
+
+# -------------- Euclidean distance model --------------
 
 def euclidean_distance(vects):
     x, y = vects
@@ -72,66 +111,26 @@ def eucl_dist_output_shape(shapes):
     shape1, shape2 = shapes
     return (shape1[0], 1)
 
-# https://stackoverflow.com/questions/51003027/computing-cosine-similarity-between-two-tensors-in-keras
 
-
-def cosine_distance(vests):
-    x, y = vests
-    x = K.l2_normalize(x, axis=-1)
-    y = K.l2_normalize(y, axis=-1)
-    return -K.mean(x * y, axis=-1, keepdims=True)
-
-
-def cos_dist_output_shape(shapes):
-    shape1, shape2 = shapes
-    return (shape1[0], 1)
-
-
-def get_train_1_model():
+def get_train_model_euclidean():
     # network definition
     input_shape = (112, 96, 3)
     base_network = sphereface20(input_shape)
-
     input_a = Input(shape=input_shape)
     input_b = Input(shape=input_shape)
-
-    # because we re-use the same instance `base_network`,
-    # the weights of the network
-    # will be shared across the two branches
     processed_a = base_network(input_a)
     processed_b = base_network(input_b)
     distance = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)(
         [processed_a, processed_b])
-
     model = Model([input_a, input_b], distance)
     return model
 
 
-def get_train_2_model():
-    # network definition
-    input_shape = (112, 96, 3)
-    base_network = sphereface20(input_shape)
-
-    input_a = Input(shape=input_shape)
-    input_b = Input(shape=input_shape)
-
-    # because we re-use the same instance `base_network`,
-    # the weights of the network
-    # will be shared across the two branches
-    processed_a = base_network(input_a)
-    processed_b = base_network(input_b)
-    distance = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)(
-        [processed_a, processed_b])
-
-    model = Model([input_a, input_b], distance)
-    return model
-
-
-def save_model_config(name):
+def save_model_config(model, name):
     # save model
     folder_path = Path.cwd() / 'models' / 'sphereface_20_keras'
     folder_path.mkdir(parents=True, exist_ok=True)
     model_path = str(folder_path / name)
-    model_json = base_network.to_json()
+    model_json = model.to_json()
     with open(model_path, "w") as json_file:
         json_file.write(model_json)

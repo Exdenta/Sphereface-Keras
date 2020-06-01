@@ -1,29 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from utils import load_data, load_short_train_data, load_test_data
+from models import get_train_model_cosine, save_model_config
+from tensorflow.keras.losses import CosineSimilarity
+from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras import backend as K
+import matplotlib.pyplot as plt
+from tensorflow import keras
+from scipy import spatial
+from pathlib import Path
+import tensorflow as tf
+from tqdm import tqdm
+import pandas as pd
+import numpy as np
+import itertools
+import random
+import math
+import cv2
 import os
 import warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # suppress Tensorflow verbose prints
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-import cv2
-import math
-import random
-import itertools
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-import tensorflow as tf
-from pathlib import Path
-from scipy import spatial
-from tensorflow import keras
-import matplotlib.pyplot as plt
-from tensorflow.keras import backend as K
-from tensorflow.keras.optimizers import RMSprop
-from tensorflow.keras.losses import CosineSimilarity
-from models import get_train_model, save_model_config
-from utils import load_data, load_short_train_data, load_test_data
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 tf.test.is_gpu_available()
 
@@ -31,6 +31,7 @@ tf.test.is_gpu_available()
 # https://medium.com/@vijayabhaskar96/tutorial-on-keras-flow-from-dataframe-1fd4493d237c
 # https://stackoverflow.com/questions/49404993/keras-how-to-use-fit-generator-with-multiple-inputs
 
+models_path = Path.cwd() / 'models' / 'sphereface_20_keras'
 data_path = Path.cwd() / 'datasets'
 train_dataset_path = data_path / 'CASIA-WebFace-112x96'
 test_dataset_path = data_path / 'lfw_112x96'
@@ -176,8 +177,7 @@ early_stopping = keras.callbacks.EarlyStopping(
     verbose=0,
     mode='auto')
 
-model = get_train_model()
-save_model_config('sphereface_20.json')
+model = get_train_model_cosine()
 model.compile(loss=contrastive_loss,
               optimizer=sgd,
               metrics=[accuracy])
@@ -188,17 +188,24 @@ callbacks_ = [history, lrate, early_stopping]
 initial_epoch_ = 35
 epochs_ = 40
 
-weights_path = str(folder_path / 'sphereface_20_8372.h5')
+weights_path = str(models_path / 'sphereface_20_8372.h5')
 model.load_weights(weights_path)
 
-hist = model.fit(train_generator(train_dataframe, batch_size_),
-                 steps_per_epoch=images_per_epoch_ // batch_size_,
-                 epochs=epochs_,
-                 validation_data=test_generator(test_dataframe, batch_size_),
-                 validation_steps=len(test_dataframe) // batch_size_,
-                 callbacks=callbacks_,
-                 initial_epoch=initial_epoch_,
-                 shuffle=True)
 
-save_path = str(folder_path / 'sphereface_20_new.h5')
+try:
+    hist = model.fit(train_generator(train_dataframe, batch_size_),
+                     steps_per_epoch=images_per_epoch_ // batch_size_,
+                     epochs=epochs_,
+                     validation_data=test_generator(
+                         test_dataframe, batch_size_),
+                     validation_steps=len(test_dataframe) // batch_size_,
+                     callbacks=callbacks_,
+                     initial_epoch=initial_epoch_,
+                     shuffle=True)
+
+    save_path = str(models_path / 'test_sphereface_20_new.h5')
+except KeyboardInterrupt:
+    save_path = str(models_path / 'test_sphereface_20_interrupted.h5')
+
 model.save_weights(save_path)
+print('Output saved to: "{}./*"'.format(save_path))
