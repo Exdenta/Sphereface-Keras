@@ -2,9 +2,7 @@
 # coding: utf-8
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from utils import load_data, load_short_train_data, load_test_data
 from tensorflow.keras.initializers import TruncatedNormal
-from models import *
 from tensorflow.keras.losses import CosineSimilarity
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
@@ -14,6 +12,8 @@ from scipy import spatial
 from pathlib import Path
 import tensorflow as tf
 from tqdm import tqdm
+from models import *
+from utils import *
 import pandas as pd
 import numpy as np
 import itertools
@@ -49,7 +49,7 @@ def preprocess_image(image):
 
 
 def train_generator(train_dataframe, batch_size_):
-    class_mode_ = "binary"
+    class_mode_ = "sparse"
     generator = ImageDataGenerator(
         preprocessing_function=preprocess_image, validation_split=0.0)
 
@@ -85,7 +85,7 @@ def train_generator(train_dataframe, batch_size_):
 
 
 def test_generator(test_dataframe, batch_size):
-    class_mode_ = "binary"
+    class_mode_ = "sparse"
     test_datagen = ImageDataGenerator(
         preprocessing_function=preprocess_image)
     test_generator_X1 = test_datagen.flow_from_dataframe(
@@ -118,7 +118,7 @@ def test_generator(test_dataframe, batch_size):
 
 
 # -------------------- Compile --------------------
-learning_rate = 0.001
+learning_rate = 0.1
 decay_rate = 5e-4
 momentum = 0.9
 sgd = keras.optimizers.SGD(lr=learning_rate,
@@ -145,10 +145,10 @@ def accuracy(y_true, y_pred):
     return K.mean(K.equal(y_true, K.cast(y_pred < 0.5, y_true.dtype)))
 
 
-model = get_train_model_euclidean()
+model = get_vggface_model()
 model.compile(loss=contrastive_loss,
               optimizer=sgd,
-              metrics=[accuracy])
+              metrics=['accuracy'])
 
 
 # -------------------- Train --------------------
@@ -159,7 +159,7 @@ images_per_epoch_ = 100000
 early_stopping = keras.callbacks.EarlyStopping(
     monitor='val_loss',
     min_delta=0,
-    patience=1,
+    patience=3,
     verbose=0,
     mode='auto')
 
