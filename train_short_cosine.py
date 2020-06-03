@@ -118,7 +118,7 @@ def test_generator(test_dataframe, batch_size):
 
 
 # -------------------- Compile --------------------
-learning_rate = 0.0001
+learning_rate = 0.001
 decay_rate = 5e-6
 momentum = 0.9
 sgd = keras.optimizers.SGD(lr=learning_rate,
@@ -146,9 +146,10 @@ def accuracy(y_true, y_pred):
 
 
 model = get_train_model_cosine()
-model.compile(loss=contrastive_loss,
-              optimizer=sgd,
-              metrics=[accuracy])
+model.compile(loss='binary_crossentropy', optimizer=opt, metrics=['accuracy'])
+# model.compile(loss=contrastive_loss,
+#               optimizer=sgd,
+#               metrics=[accuracy])
 
 
 # -------------------- Train --------------------

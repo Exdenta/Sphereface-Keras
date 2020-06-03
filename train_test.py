@@ -3,7 +3,7 @@
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from utils import load_data, load_train_data, load_short_train_data, load_test_data
-from models import get_train_model_cosine, save_model_config
+from models import *
 from tensorflow.keras.losses import CosineSimilarity
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
@@ -37,14 +37,9 @@ train_dataset_path = data_path / 'CASIA-WebFace-112x96'
 test_dataset_path = data_path / 'lfw_112x96'
 
 print("Loading data")
-train_dataframe = load_short_train_data(data_path, 4000)
-# train_dataframe = load_train_data(data_path)
+# train_dataframe = load_short_train_data(data_path, 4000)
+train_dataframe = load_train_data(data_path)
 test_dataframe = load_test_data(data_path)
-
-
-def preprocess_image(image):
-    image = (image - 127.5) / 128
-    return image
 
 
 def train_generator(train_dataframe, batch_size_):
@@ -116,8 +111,23 @@ def test_generator(test_dataframe, batch_size):
         yield [X1i[0], X2i[0]], X1i[1]
 
 
-def accuracy(y_true, y_pred):
-    return K.mean(K.equal(y_true, K.cast(y_pred < 0.5, y_true.dtype)))
+# -------------------- Compile --------------------
+learning_rate_ = 0.01
+decay_rate_ = 5e-4
+momentum_ = 0.9
+sgd = keras.optimizers.SGD(lr=learning_rate_,
+                           momentum=momentum_,
+                           decay=decay_rate_,
+                           nesterov=False)
+
+
+def preprocess_image(image):
+    image = (image - 127.5) / 128
+    return image
+
+
+def custom_loss(yTrue, yPred):
+    return K.sum(K.log(yTrue) - K.log(yPred))
 
 
 def contrastive_loss(y_true, y_pred):
@@ -130,10 +140,42 @@ def contrastive_loss(y_true, y_pred):
     return K.mean(y_true * square_pred + (1 - y_true) * margin_square)
 
 
-def custom_loss(yTrue, yPred):
-    return K.sum(K.log(yTrue) - K.log(yPred))
+def accuracy(y_true, y_pred):
+    return K.mean(K.equal(y_true, K.cast(y_pred < 0.5, y_true.dtype)))
 
 
+model = get_train_model_euclidean()
+model.compile(loss=contrastive_loss,
+              optimizer=sgd,
+              metrics=[accuracy])
+
+
+# -------------------- Train --------------------
+batch_size_ = 128
+images_per_epoch_ = 100000
+
+early_stopping = keras.callbacks.EarlyStopping(
+    monitor='val_loss',
+    min_delta=0,
+    patience=2,
+    verbose=0,
+    mode='auto')
+
+
+def step_decay(losses):
+    lrate = learning_rate_
+    momentum = momentum_
+    decay_rate = decay_rate_
+    return lrate
+
+
+def scheduler(epoch, lr):
+    momentum = momentum_
+    decay_rate = decay_rate_
+    lr = learning_rate_
+    return lr
+
+sd = []
 class LossHistory(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):
         self.losses = [1, 1]
@@ -144,56 +186,11 @@ class LossHistory(keras.callbacks.Callback):
         print(', lr:', step_decay(len(self.losses)))
 
 
-sd = []
-
-learning_rate = 0.001
-decay_rate = 5e-6
-momentum = 0.9
-batch_size_ = 128
-images_per_epoch_ = 100000
-
-sgd = keras.optimizers.SGD(lr=learning_rate,
-                           momentum=momentum,
-                           decay=decay_rate,
-                           nesterov=False)
-
-
-def scheduler(epoch, lr):
-    momentum = 0.8
-    decay_rate = 2e-6
-    lr = learning_rate
-    return lr
-
-
-def step_decay(losses):
-    lrate = learning_rate
-    momentum = 0.8
-    decay_rate = 2e-6
-    return lrate
-
-
-early_stopping = keras.callbacks.EarlyStopping(
-    monitor='val_loss',
-    min_delta=0,
-    patience=1,
-    verbose=0,
-    mode='auto')
-
-bce = tf.keras.losses.BinaryCrossentropy()
-
-model = get_train_model_cosine()
-model.compile(loss=bce,
-              optimizer=sgd,
-              metrics=[accuracy])
-
 history = LossHistory()
 lrate = keras.callbacks.LearningRateScheduler(scheduler)
 callbacks_ = [history, lrate, early_stopping]
-initial_epoch_ = 0
+initial_epoch_ = 1
 epochs_ = 10
-
-# weights_path = str(models_path / 'sphereface_20_8372.h5')
-# model.load_weights(weights_path)
 
 try:
     hist = model.fit(train_generator(train_dataframe, batch_size_),
@@ -206,9 +203,9 @@ try:
                      initial_epoch=initial_epoch_,
                      shuffle=True)
 
-    save_path = str(models_path / 'sphereface_20_cosine_new.h5')
+    save_path = str(models_path / 'test_sphereface_20_new.h5')
 except KeyboardInterrupt:
-    save_path = str(models_path / 'sphereface_20_cosine_interrupted.h5')
+    save_path = str(models_path / 'test_sphereface_20_interrupted.h5')
 
 model.save_weights(save_path)
 print('Output saved to: "{}./*"'.format(save_path))

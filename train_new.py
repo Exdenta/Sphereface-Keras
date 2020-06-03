@@ -2,8 +2,8 @@
 # coding: utf-8
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from utils import load_data, load_train_data, load_short_train_data, load_test_data
-from models import get_train_model_cosine, save_model_config
+from utils import *
+from models import *
 from tensorflow.keras.losses import CosineSimilarity
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
@@ -37,8 +37,9 @@ train_dataset_path = data_path / 'CASIA-WebFace-112x96'
 test_dataset_path = data_path / 'lfw_112x96'
 
 print("Loading data")
-train_dataframe = load_short_train_data(data_path, 4000)
-# train_dataframe = load_train_data(data_path)
+# train_dataframe = load_short_train_data(data_path, 100000 * 2)
+# train_dataframe = load_short_train_data(data_path, 5000)
+train_dataframe = load_train_data(data_path)
 test_dataframe = load_test_data(data_path)
 
 
@@ -146,54 +147,54 @@ class LossHistory(keras.callbacks.Callback):
 
 sd = []
 
-learning_rate = 0.001
-decay_rate = 5e-6
-momentum = 0.9
-batch_size_ = 128
+learning_rate = 0.0001
+decay_rate_ = 5e-4
+momentum_ = 0.9
+batch_size_ = 64
 images_per_epoch_ = 100000
 
 sgd = keras.optimizers.SGD(lr=learning_rate,
-                           momentum=momentum,
-                           decay=decay_rate,
+                           momentum=momentum_,
+                           decay=decay_rate_,
                            nesterov=False)
 
 
 def scheduler(epoch, lr):
-    momentum = 0.8
-    decay_rate = 2e-6
+    momentum = momentum_
+    decay_rate = decay_rate_
     lr = learning_rate
     return lr
 
 
 def step_decay(losses):
     lrate = learning_rate
-    momentum = 0.8
-    decay_rate = 2e-6
+    momentum = momentum_
+    decay_rate = decay_rate_
     return lrate
 
 
 early_stopping = keras.callbacks.EarlyStopping(
     monitor='val_loss',
     min_delta=0,
-    patience=1,
+    patience=2,
     verbose=0,
     mode='auto')
 
-bce = tf.keras.losses.BinaryCrossentropy()
-
-model = get_train_model_cosine()
-model.compile(loss=bce,
+model = get_train_test_model_euclidean()
+# save_model_config('sphereface_20.json')
+model.compile(loss=contrastive_loss,
               optimizer=sgd,
               metrics=[accuracy])
 
 history = LossHistory()
 lrate = keras.callbacks.LearningRateScheduler(scheduler)
 callbacks_ = [history, lrate, early_stopping]
-initial_epoch_ = 0
-epochs_ = 10
+initial_epoch_ = 15
+epochs_ = 30
 
-# weights_path = str(models_path / 'sphereface_20_8372.h5')
-# model.load_weights(weights_path)
+weights_path = str(models_path / 'sphereface_20_new.h5')
+# weights_path = str(folder_path / 'sphereface_20_8372.h5')
+model.load_weights(weights_path)
 
 try:
     hist = model.fit(train_generator(train_dataframe, batch_size_),
@@ -206,9 +207,9 @@ try:
                      initial_epoch=initial_epoch_,
                      shuffle=True)
 
-    save_path = str(models_path / 'sphereface_20_cosine_new.h5')
+    save_path = str(models_path / 'sphereface_20_new.h5')
 except KeyboardInterrupt:
-    save_path = str(models_path / 'sphereface_20_cosine_interrupted.h5')
+    save_path = str(models_path / 'sphereface_20_interrupted.h5')
 
 model.save_weights(save_path)
 print('Output saved to: "{}./*"'.format(save_path))

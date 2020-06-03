@@ -2,8 +2,8 @@
 # coding: utf-8
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from utils import load_data, load_train_data, load_short_train_data, load_test_data
-from models import get_train_model_cosine, save_model_config
+from utils import *
+from models import *
 from tensorflow.keras.losses import CosineSimilarity
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
@@ -31,14 +31,14 @@ tf.test.is_gpu_available()
 # https://medium.com/@vijayabhaskar96/tutorial-on-keras-flow-from-dataframe-1fd4493d237c
 # https://stackoverflow.com/questions/49404993/keras-how-to-use-fit-generator-with-multiple-inputs
 
-models_path = Path.cwd() / 'models' / 'sphereface_20_keras'
 data_path = Path.cwd() / 'datasets'
 train_dataset_path = data_path / 'CASIA-WebFace-112x96'
 test_dataset_path = data_path / 'lfw_112x96'
 
 print("Loading data")
-train_dataframe = load_short_train_data(data_path, 4000)
-# train_dataframe = load_train_data(data_path)
+# train_dataframe = load_short_train_data(data_path, 100000 * 2)
+train_dataframe = load_short_train_data(data_path, 5000)
+#  load_train_data(data_path)
 test_dataframe = load_test_data(data_path)
 
 
@@ -149,7 +149,7 @@ sd = []
 learning_rate = 0.001
 decay_rate = 5e-6
 momentum = 0.9
-batch_size_ = 128
+batch_size_ = 32
 images_per_epoch_ = 100000
 
 sgd = keras.optimizers.SGD(lr=learning_rate,
@@ -175,24 +175,23 @@ def step_decay(losses):
 early_stopping = keras.callbacks.EarlyStopping(
     monitor='val_loss',
     min_delta=0,
-    patience=1,
+    patience=2,
     verbose=0,
     mode='auto')
 
-bce = tf.keras.losses.BinaryCrossentropy()
-
-model = get_train_model_cosine()
-model.compile(loss=bce,
+model = get_train_model_euclidean()
+# save_model_config('sphereface_20.json')
+model.compile(loss=contrastive_loss,
               optimizer=sgd,
               metrics=[accuracy])
 
 history = LossHistory()
 lrate = keras.callbacks.LearningRateScheduler(scheduler)
 callbacks_ = [history, lrate, early_stopping]
-initial_epoch_ = 0
+initial_epoch_ = 1
 epochs_ = 10
 
-# weights_path = str(models_path / 'sphereface_20_8372.h5')
+# weights_path = str(folder_path / 'sphereface_20_8372.h5')
 # model.load_weights(weights_path)
 
 try:
@@ -206,9 +205,9 @@ try:
                      initial_epoch=initial_epoch_,
                      shuffle=True)
 
-    save_path = str(models_path / 'sphereface_20_cosine_new.h5')
+    save_path = str(models_path / 'sphereface_20_new.h5')
 except KeyboardInterrupt:
-    save_path = str(models_path / 'sphereface_20_cosine_interrupted.h5')
+    save_path = str(models_path / 'sphereface_20_interrupted.h5')
 
 model.save_weights(save_path)
 print('Output saved to: "{}./*"'.format(save_path))

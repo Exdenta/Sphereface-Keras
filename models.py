@@ -54,7 +54,26 @@ def conv_2_block(input, filters):
 
 
 def sphereface20(input_shape):
-    num_classes = 2
+    num_classes = 1
+    input = Input(shape=input_shape)
+    x = conv_3_block(input, 64)
+    x = conv_3_block(x, 128)
+    x = conv_2_block(x, 128)
+    x = conv_3_block(x, 256)
+    x = conv_2_block(x, 256)
+    x = conv_2_block(x, 256)
+    x = conv_2_block(x, 256)
+    x = conv_3_block(x, 512)
+
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(512, kernel_initializer='glorot_uniform')(x)
+    # fc6 = MarginInnerProductLayer(512, num_classes)
+
+    model = Model(input, x)
+    return model
+
+
+def sphereface20_test(input_shape):
     input = Input(shape=input_shape)
     x = conv_3_block(input, 64)
     x = conv_3_block(x, 128)
@@ -68,9 +87,12 @@ def sphereface20(input_shape):
     # custom
     x = Flatten()(x)
     x = BatchNormalization()(x)
-    x = Dropout(0.5)(x)
+    # x = Dropout(0.5)(x)
+    # x = GlobalAveragePooling2D()(x)
     x = Dense(512, kernel_initializer='glorot_uniform')(x)
     x = BatchNormalization()(x)
+    # x = Dense(512, kernel_initializer='glorot_uniform')(x)
+    # x = BatchNormalization()(x)
 
     model = Model(input, x)
     return model
@@ -104,9 +126,14 @@ def get_train_model_cosine():
     processed_a = base_network(input_a)
     processed_b = base_network(input_b)
     distance = Lambda(cosine_distance, output_shape=cos_dist_output_shape)(
-        [processed_a, processed_b])
+        [processed_a, processed_b])  # [0, 2]
 
-    model = Model([input_a, input_b], distance)
+    print("distance: ", distance)
+    print("Output shape: ", distance.output_shape)
+
+    x = tf.keras.layers.Activation('sigmoid')(distance)
+
+    model = Model([input_a, input_b], x) # [0, 1]
     return model
 
 
@@ -133,6 +160,22 @@ def get_train_model_euclidean():
     processed_b = base_network(input_b)
     distance = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)(
         [processed_a, processed_b])
+
+    model = Model([input_a, input_b], distance)
+    return model
+
+
+def get_train_test_model_euclidean():
+    # network definition
+    input_shape = (112, 96, 3)
+    base_network = sphereface20_test(input_shape)
+    input_a = Input(shape=input_shape)
+    input_b = Input(shape=input_shape)
+    processed_a = base_network(input_a)
+    processed_b = base_network(input_b)
+    distance = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)(
+        [processed_a, processed_b])
+
     model = Model([input_a, input_b], distance)
     return model
 

@@ -118,12 +118,12 @@ def test_generator(test_dataframe, batch_size):
 
 
 # -------------------- Compile --------------------
-learning_rate = 0.001
-decay_rate = 5e-4
-momentum = 0.9
-sgd = keras.optimizers.SGD(lr=learning_rate,
-                           momentum=momentum,
-                           decay=decay_rate,
+learning_rate_ = 0.01
+decay_rate_ = 5e-4
+momentum_ = 0.9
+sgd = keras.optimizers.SGD(lr=learning_rate_,
+                           momentum=momentum_,
+                           decay=decay_rate_,
                            nesterov=False)
 
 
@@ -165,16 +165,16 @@ early_stopping = keras.callbacks.EarlyStopping(
 
 
 def step_decay(losses):
-    lrate = learning_rate
-    momentum = 0.8
-    decay_rate = 2e-6
+    lrate = learning_rate_
+    momentum = momentum_
+    decay_rate = decay_rate_
     return lrate
 
 
 def scheduler(epoch, lr):
-    momentum = 0.8
-    decay_rate = 2e-6
-    lr = learning_rate
+    momentum = momentum_
+    decay_rate = decay_rate_
+    lr = learning_rate_
     return lr
 
 
