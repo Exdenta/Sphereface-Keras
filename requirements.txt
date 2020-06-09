@@ -6,6 +6,6 @@ scipy
 scikit-image
 opencv-python
 mtcnn
-tensorflow
+tensorflow-gpu
 keras
 protobuf

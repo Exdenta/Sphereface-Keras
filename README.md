@@ -4,11 +4,13 @@ A Keras Implementation of SphereFace.
 
 [SphereFace: Deep Hypersphere Embedding for Face Recognition](https://arxiv.org/abs/1704.08063)
 
-Pretrained models: 
+Pretrained models:
 - Original Sphereface-20 Caffe model from [wy1iu/sphereface](https://github.com/wy1iu/sphereface): [Google Drive](https://drive.google.com/file/d/0B_geeR2lTMegb2F6dmlmOXhWaVk/view) link
 
-## Prerequisites:
-- Python 3
+## Setup:
+1. Run `pip3 install -r requirements.txt`
+2. Download and extract shape predictor 68 landmarks at this [link](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2).
+3. Place the extracted predictor in the /models directory of this project.
 
 ## Train:
 Download the training set **CASIA-WebFace**, unzip it and put it to datasets/.<br>

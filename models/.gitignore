@@ -1,3 +1,4 @@
-
+*
+!.gitignore
 /sphereface_20_caffe/sphereface_model.caffemodel
 /sphereface_20_keras/*.h5

@@ -2,8 +2,8 @@
 # coding: utf-8
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from utils import load_data, load_train_data, load_short_train_data, load_test_data
-from models import get_train_model_cosine, save_model_config
+from utils import *
+from models import *
 from tensorflow.keras.losses import CosineSimilarity
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
@@ -37,9 +37,15 @@ train_dataset_path = data_path / 'CASIA-WebFace-112x96'
 test_dataset_path = data_path / 'lfw_112x96'
 
 print("Loading data")
-train_dataframe = load_short_train_data(data_path, 4000)
-# train_dataframe = load_train_data(data_path)
+# train_dataframe = load_short_train_data(data_path, 4000)
+train_dataframe = load_train_data(data_path)
 test_dataframe = load_test_data(data_path)
+
+print("train data")
+train_dataframe.to_csv(str(data_path / "train.csv"))
+print("test data")
+test_dataframe.to_csv(str(data_path / "test.csv"))
+exit("OK")
 
 
 def preprocess_image(image):
@@ -116,6 +122,26 @@ def test_generator(test_dataframe, batch_size):
         yield [X1i[0], X2i[0]], X1i[1]
 
 
+def get_train_model(self):
+    # network definition
+    input_shape = (112, 96, 3)
+    base_network = self.get_model(input_shape)
+
+    input_a = Input(shape=input_shape)
+    input_b = Input(shape=input_shape)
+
+    # because we re-use the same instance `base_network`,
+    # the weights of the network
+    # will be shared across the two branches
+    processed_a = base_network(input_a)
+    processed_b = base_network(input_b)
+    distance = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)(
+        [processed_a, processed_b])
+
+    model = Model([input_a, input_b], distance)
+    return model
+
+
 def accuracy(y_true, y_pred):
     return K.mean(K.equal(y_true, K.cast(y_pred < 0.5, y_true.dtype)))
 
@@ -181,7 +207,7 @@ early_stopping = keras.callbacks.EarlyStopping(
 
 bce = tf.keras.losses.BinaryCrossentropy()
 
-model = get_train_model_cosine()
+model = SphereFace.getmodel()
 model.compile(loss=bce,
               optimizer=sgd,
               metrics=[accuracy])
